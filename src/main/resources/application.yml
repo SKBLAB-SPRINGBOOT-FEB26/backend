@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: backend
+
+# datasource's and etc.
+
+logging:
+  level:
+    org.springframework.security: WARN
