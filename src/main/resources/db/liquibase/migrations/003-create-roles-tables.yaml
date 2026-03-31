@@ -1,0 +1,25 @@
+databaseChangeLog:
+  - changeSet:
+      id: 003-create-roles-tables
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE roles (
+                  id   SERIAL PRIMARY KEY,
+                  name VARCHAR(50) NOT NULL,
+
+                  CONSTRAINT uq_roles_name UNIQUE (name)
+              );
+
+              CREATE TABLE user_roles (
+                  user_id UUID    NOT NULL REFERENCES users (id) ON DELETE CASCADE,
+                  role_id INTEGER NOT NULL REFERENCES roles (id) ON DELETE CASCADE,
+
+                  PRIMARY KEY (user_id, role_id)
+              );
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS user_roles CASCADE;
+              DROP TABLE IF EXISTS roles CASCADE;

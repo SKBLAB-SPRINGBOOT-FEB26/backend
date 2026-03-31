@@ -1,0 +1,28 @@
+databaseChangeLog:
+  - changeSet:
+      id: 005-create-transactions-table
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE transactions (
+                  id                UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  reference_number  VARCHAR(64) NOT NULL,
+                  idempotency_key   VARCHAR(64) NOT NULL,
+                  transaction_type  transaction_type NOT NULL,
+                  status            transaction_status NOT NULL DEFAULT 'PENDING',
+                  amount            NUMERIC(19, 4) NOT NULL,
+                  currency          CHAR(3) NOT NULL,
+                  description       VARCHAR(500),
+                  created_at        TIMESTAMPTZ NOT NULL DEFAULT now(),
+                  completed_at      TIMESTAMPTZ,
+
+                  CONSTRAINT uq_transactions_reference UNIQUE (reference_number),
+                  CONSTRAINT uq_transactions_idempotency UNIQUE (idempotency_key),
+                  CONSTRAINT chk_transactions_amount CHECK (amount > 0),
+                  CONSTRAINT chk_transactions_currency CHECK (currency ~ '^[A-Z]{3}$')
+              );
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS transactions CASCADE;

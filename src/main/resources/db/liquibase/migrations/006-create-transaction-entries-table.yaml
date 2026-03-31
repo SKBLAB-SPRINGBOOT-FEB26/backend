@@ -1,0 +1,21 @@
+databaseChangeLog:
+  - changeSet:
+      id: 006-create-transaction-entries-table
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE transaction_entries (
+                  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  transaction_id UUID NOT NULL REFERENCES transactions (id) ON DELETE CASCADE,
+                  account_id     UUID NOT NULL REFERENCES accounts (id) ON DELETE RESTRICT,
+                  entry_type     entry_type NOT NULL,
+                  amount         NUMERIC(19, 4) NOT NULL,
+                  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+                  CONSTRAINT chk_entries_amount CHECK (amount > 0)
+              );
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS transaction_entries CASCADE;

@@ -1,0 +1,30 @@
+databaseChangeLog:
+  - changeSet:
+      id: 009-create-updated-at-trigger
+      author: nexus-ledger
+      changes:
+        - sql:
+            splitStatements: false
+            stripComments: false
+            sql: |
+              CREATE OR REPLACE FUNCTION fn_set_updated_at()
+              RETURNS TRIGGER AS $$
+              BEGIN
+                  NEW.updated_at = now();
+                  RETURN NEW;
+              END;
+              $$ LANGUAGE plpgsql;
+
+              CREATE TRIGGER trg_users_updated_at
+                  BEFORE UPDATE ON users
+                  FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+
+              CREATE TRIGGER trg_accounts_updated_at
+                  BEFORE UPDATE ON accounts
+                  FOR EACH ROW EXECUTE FUNCTION fn_set_updated_at();
+      rollback:
+        - sql:
+            sql: |
+              DROP TRIGGER IF EXISTS trg_accounts_updated_at ON accounts;
+              DROP TRIGGER IF EXISTS trg_users_updated_at ON users;
+              DROP FUNCTION IF EXISTS fn_set_updated_at();

@@ -1,0 +1,17 @@
+databaseChangeLog:
+  - changeSet:
+      id: 100-seed-roles
+      author: nexus-ledger
+      context: dev
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO roles (id, name) VALUES
+                  (1, 'ROLE_USER'),
+                  (2, 'ROLE_ADMIN');
+
+              SELECT setval('roles_id_seq', (SELECT MAX(id) FROM roles));
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM roles WHERE id IN (1, 2);

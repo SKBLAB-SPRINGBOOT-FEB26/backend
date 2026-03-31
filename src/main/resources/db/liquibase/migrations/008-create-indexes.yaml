@@ -1,0 +1,41 @@
+databaseChangeLog:
+  - changeSet:
+      id: 008-create-indexes
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              -- Users
+              CREATE INDEX idx_users_kyc_status ON users (kyc_status);
+
+              -- Accounts
+              CREATE INDEX idx_accounts_user_id ON accounts (user_id);
+              CREATE INDEX idx_accounts_user_status ON accounts (user_id, status);
+
+              -- Transactions
+              CREATE INDEX idx_transactions_created_at ON transactions (created_at DESC);
+              CREATE INDEX idx_transactions_status_pending ON transactions (status)
+                  WHERE status = 'PENDING';
+
+              -- Transaction entries
+              CREATE INDEX idx_tx_entries_transaction_id ON transaction_entries (transaction_id);
+              CREATE INDEX idx_tx_entries_account_id ON transaction_entries (account_id);
+              CREATE INDEX idx_tx_entries_account_created ON transaction_entries (account_id, created_at DESC);
+
+              -- Outbox events
+              CREATE INDEX idx_outbox_unpublished ON outbox_events (created_at)
+                  WHERE published = FALSE;
+              CREATE INDEX idx_outbox_aggregate ON outbox_events (aggregate_type, aggregate_id);
+      rollback:
+        - sql:
+            sql: |
+              DROP INDEX IF EXISTS idx_outbox_aggregate;
+              DROP INDEX IF EXISTS idx_outbox_unpublished;
+              DROP INDEX IF EXISTS idx_tx_entries_account_created;
+              DROP INDEX IF EXISTS idx_tx_entries_account_id;
+              DROP INDEX IF EXISTS idx_tx_entries_transaction_id;
+              DROP INDEX IF EXISTS idx_transactions_status_pending;
+              DROP INDEX IF EXISTS idx_transactions_created_at;
+              DROP INDEX IF EXISTS idx_accounts_user_status;
+              DROP INDEX IF EXISTS idx_accounts_user_id;
+              DROP INDEX IF EXISTS idx_users_kyc_status;

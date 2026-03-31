@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 002-create-users-table
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE users (
+                  id            UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  email         VARCHAR(255) NOT NULL,
+                  phone         VARCHAR(20),
+                  passwd_hash   VARCHAR(128) NOT NULL,
+                  first_name    VARCHAR(100) NOT NULL,
+                  last_name     VARCHAR(100) NOT NULL,
+                  date_of_birth DATE,
+                  kyc_status    kyc_status NOT NULL DEFAULT 'PENDING',
+                  enabled       BOOLEAN NOT NULL DEFAULT TRUE,
+                  locked        BOOLEAN NOT NULL DEFAULT FALSE,
+                  created_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+                  updated_at    TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+                  CONSTRAINT uq_users_email UNIQUE (email)
+              );
+
+              CREATE UNIQUE INDEX idx_users_phone_partial ON users (phone) WHERE phone IS NOT NULL;
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS users CASCADE;

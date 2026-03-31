@@ -1,0 +1,22 @@
+databaseChangeLog:
+  - changeSet:
+      id: 001-create-enum-types
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TYPE kyc_status AS ENUM ('PENDING', 'VERIFIED', 'REJECTED');
+              CREATE TYPE account_type AS ENUM ('CHECKING', 'SAVINGS', 'LOAN');
+              CREATE TYPE account_status AS ENUM ('ACTIVE', 'FROZEN', 'CLOSED');
+              CREATE TYPE transaction_type AS ENUM ('TRANSFER', 'DEPOSIT', 'WITHDRAWAL', 'WIRE');
+              CREATE TYPE transaction_status AS ENUM ('PENDING', 'COMPLETED', 'FAILED', 'REVERSED');
+              CREATE TYPE entry_type AS ENUM ('DEBIT', 'CREDIT');
+      rollback:
+        - sql:
+            sql: |
+              DROP TYPE IF EXISTS entry_type;
+              DROP TYPE IF EXISTS transaction_status;
+              DROP TYPE IF EXISTS transaction_type;
+              DROP TYPE IF EXISTS account_status;
+              DROP TYPE IF EXISTS account_type;
+              DROP TYPE IF EXISTS kyc_status;

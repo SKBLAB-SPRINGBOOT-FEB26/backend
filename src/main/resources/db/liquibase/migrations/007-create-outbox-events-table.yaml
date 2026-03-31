@@ -1,0 +1,20 @@
+databaseChangeLog:
+  - changeSet:
+      id: 007-create-outbox-events-table
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE outbox_events (
+                  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  aggregate_type VARCHAR(100) NOT NULL,
+                  aggregate_id   UUID NOT NULL,
+                  event_type     VARCHAR(100) NOT NULL,
+                  payload        JSONB NOT NULL,
+                  published      BOOLEAN NOT NULL DEFAULT FALSE,
+                  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+              );
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS outbox_events CASCADE;

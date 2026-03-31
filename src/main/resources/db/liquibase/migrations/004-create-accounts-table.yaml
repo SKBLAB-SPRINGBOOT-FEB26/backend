@@ -1,0 +1,29 @@
+databaseChangeLog:
+  - changeSet:
+      id: 004-create-accounts-table
+      author: nexus-ledger
+      changes:
+        - sql:
+            sql: |
+              CREATE TABLE accounts (
+                  id             UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+                  user_id        UUID NOT NULL REFERENCES users (id) ON DELETE RESTRICT,
+                  account_number VARCHAR(34) NOT NULL,
+                  account_type   account_type NOT NULL,
+                  currency       CHAR(3) NOT NULL,
+                  balance        NUMERIC(19, 4) NOT NULL DEFAULT 0.0000,
+                  status         account_status NOT NULL DEFAULT 'ACTIVE',
+                  created_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+                  updated_at     TIMESTAMPTZ NOT NULL DEFAULT now(),
+
+                  CONSTRAINT uq_accounts_number UNIQUE (account_number),
+                  CONSTRAINT chk_accounts_currency CHECK (currency ~ '^[A-Z]{3}$'),
+                  CONSTRAINT chk_accounts_balance CHECK (
+                      (account_type IN ('CHECKING', 'SAVINGS') AND balance >= 0)
+                      OR account_type = 'LOAN'
+                  )
+              );
+      rollback:
+        - sql:
+            sql: |
+              DROP TABLE IF EXISTS accounts CASCADE;

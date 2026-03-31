@@ -1,0 +1,54 @@
+databaseChangeLog:
+  - changeSet:
+      id: 102-seed-accounts
+      author: nexus-ledger
+      context: dev
+      comment: >
+        System cash accounts (owned by admin) serve as contra accounts
+        for deposits/withdrawals in double-entry bookkeeping.
+      changes:
+        - sql:
+            sql: |
+              INSERT INTO accounts (id, user_id, account_number, account_type, currency, balance, status) VALUES
+                  -- System cash accounts (contra accounts for deposits/withdrawals)
+                  ('a0000001-0000-0000-0000-000000000001',
+                   '11111111-1111-1111-1111-111111111111',
+                   'NL0000000000000001', 'CHECKING', 'RUB', 10000000.0000, 'ACTIVE'),
+
+                  ('a0000002-0000-0000-0000-000000000002',
+                   '11111111-1111-1111-1111-111111111111',
+                   'NL0000000000000002', 'CHECKING', 'USD', 500000.0000, 'ACTIVE'),
+
+                  ('a0000003-0000-0000-0000-000000000003',
+                   '11111111-1111-1111-1111-111111111111',
+                   'NL0000000000000003', 'CHECKING', 'EUR', 500000.0000, 'ACTIVE'),
+
+                  -- Ivan Petrov's accounts
+                  ('a1000001-0000-0000-0000-000000000001',
+                   '22222222-2222-2222-2222-222222222222',
+                   'NL4020000000000101', 'CHECKING', 'RUB', 250000.0000, 'ACTIVE'),
+
+                  ('a1000002-0000-0000-0000-000000000002',
+                   '22222222-2222-2222-2222-222222222222',
+                   'NL4020000000000102', 'SAVINGS', 'USD', 5000.0000, 'ACTIVE'),
+
+                  -- Maria Sidorova's accounts
+                  ('a2000001-0000-0000-0000-000000000001',
+                   '33333333-3333-3333-3333-333333333333',
+                   'NL4020000000000201', 'CHECKING', 'RUB', 100000.0000, 'ACTIVE'),
+
+                  ('a2000002-0000-0000-0000-000000000002',
+                   '33333333-3333-3333-3333-333333333333',
+                   'NL4020000000000202', 'SAVINGS', 'EUR', 1500.0000, 'ACTIVE');
+      rollback:
+        - sql:
+            sql: |
+              DELETE FROM accounts WHERE id IN (
+                  'a0000001-0000-0000-0000-000000000001',
+                  'a0000002-0000-0000-0000-000000000002',
+                  'a0000003-0000-0000-0000-000000000003',
+                  'a1000001-0000-0000-0000-000000000001',
+                  'a1000002-0000-0000-0000-000000000002',
+                  'a2000001-0000-0000-0000-000000000001',
+                  'a2000002-0000-0000-0000-000000000002'
+              );
