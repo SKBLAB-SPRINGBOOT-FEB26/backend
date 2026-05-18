@@ -1,0 +1,370 @@
+openapi: 3.0.3
+info:
+  title: NexusLedger Backend API
+  version: 0.1.0
+  description: |
+    Spec-first API surface. Server interfaces and DTOs are generated into
+    `build/generated/openapi/...` by the `openApiGenerate` Gradle task and
+    implemented by hand-written controllers.
+
+servers:
+  - url: http://localhost:8080
+    description: Local
+
+tags:
+  - name: auth
+    description: Authentication
+  - name: transactions
+    description: Money movement (one-to-many ledger transactions)
+  - name: users
+    description: User self-service
+
+paths:
+  /api/v1/auth/signup:
+    post:
+      tags: [auth]
+      operationId: signup
+      summary: Create a user with ROLE_USER and log them in.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignupRequest'
+      responses:
+        '201':
+          description: Created and logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          description: Email already taken.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /api/v1/auth/login:
+    post:
+      tags: [auth]
+      operationId: login
+      summary: Issue access and refresh cookies for valid credentials.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/LoginResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /api/v1/auth/logout:
+    post:
+      tags: [auth]
+      operationId: logout
+      summary: Revoke the refresh token and clear cookies.
+      responses:
+        '200':
+          description: Logged out.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/users/me:
+    get:
+      tags: [users]
+      operationId: getMe
+      summary: Current authenticated user (projection — no password hash).
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/UserResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/transactions:
+    post:
+      tags: [transactions]
+      operationId: createTransaction
+      summary: Create a transaction with two entries (debit + credit).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTransactionRequest'
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /api/v1/transactions/{id}:
+    get:
+      tags: [transactions]
+      operationId: getTransaction
+      summary: Fetch a transaction with its entries.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TransactionResponse'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+components:
+  responses:
+    Unauthorized:
+      description: Not authenticated.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    BadRequest:
+      description: Validation failed.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+    NotFound:
+      description: Resource not found.
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
+
+  schemas:
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+
+    SignupRequest:
+      type: object
+      required: [email, password, firstName, lastName]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+        password:
+          type: string
+          minLength: 8
+          maxLength: 128
+        firstName:
+          type: string
+          minLength: 1
+          maxLength: 100
+        lastName:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    LoginResponse:
+      type: object
+      required: [id, email, roles]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        roles:
+          type: array
+          items:
+            type: string
+
+    SuccessResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          default: true
+        detail:
+          type: string
+          nullable: true
+
+    ErrorResponse:
+      type: object
+      required: [ok]
+      properties:
+        ok:
+          type: boolean
+          default: false
+        detail:
+          type: string
+        validation_errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/ValidationError'
+
+    ValidationError:
+      type: object
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+
+    KycStatus:
+      type: string
+      enum: [PENDING, VERIFIED, REJECTED]
+
+    UserResponse:
+      type: object
+      required: [id, email, firstName, lastName, kycStatus, roles]
+      properties:
+        id:
+          type: string
+          format: uuid
+        email:
+          type: string
+        firstName:
+          type: string
+        lastName:
+          type: string
+        kycStatus:
+          $ref: '#/components/schemas/KycStatus'
+        roles:
+          type: array
+          items:
+            type: string
+
+    EntryType:
+      type: string
+      enum: [DEBIT, CREDIT]
+
+    TransactionType:
+      type: string
+      enum: [TRANSFER, DEPOSIT, WITHDRAWAL, WIRE]
+
+    TransactionStatus:
+      type: string
+      enum: [PENDING, COMPLETED, FAILED, REVERSED]
+
+    CreateTransactionRequest:
+      type: object
+      required: [idempotencyKey, transactionType, amount, currency, debitAccountId, creditAccountId]
+      properties:
+        idempotencyKey:
+          type: string
+          minLength: 1
+          maxLength: 64
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        amount:
+          type: number
+          format: bigdecimal
+          minimum: 0
+          exclusiveMinimum: true
+        currency:
+          type: string
+          pattern: '^[A-Z]{3}$'
+        description:
+          type: string
+          maxLength: 500
+          nullable: true
+        debitAccountId:
+          type: string
+          format: uuid
+        creditAccountId:
+          type: string
+          format: uuid
+
+    TransactionResponse:
+      type: object
+      required: [id, referenceNumber, idempotencyKey, transactionType, status, amount, currency, createdAt, entries]
+      properties:
+        id:
+          type: string
+          format: uuid
+        referenceNumber:
+          type: string
+        idempotencyKey:
+          type: string
+        transactionType:
+          $ref: '#/components/schemas/TransactionType'
+        status:
+          $ref: '#/components/schemas/TransactionStatus'
+        amount:
+          type: number
+          format: bigdecimal
+        currency:
+          type: string
+        description:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        entries:
+          type: array
+          items:
+            $ref: '#/components/schemas/EntryResponse'
+
+    EntryResponse:
+      type: object
+      required: [id, entryType, amount, createdAt, accountId]
+      properties:
+        id:
+          type: string
+          format: uuid
+        entryType:
+          $ref: '#/components/schemas/EntryType'
+        amount:
+          type: number
+          format: bigdecimal
+        createdAt:
+          type: string
+          format: date-time
+        accountId:
+          type: string
+          format: uuid
