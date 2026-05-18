@@ -54,6 +54,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         final var matchers = new PathPatternRequestMatcher[]{
                 PathPatternRequestMatcher.withDefaults().matcher("/api/*/auth/login"),
                 PathPatternRequestMatcher.withDefaults().matcher("/api/*/auth/signup"),
+                PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui.html"),
+                PathPatternRequestMatcher.withDefaults().matcher("/swagger-ui/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs"),
+                PathPatternRequestMatcher.withDefaults().matcher("/v3/api-docs/**"),
+                PathPatternRequestMatcher.withDefaults().matcher("/webjars/**"),
         };
 
         return Arrays.stream(matchers)

@@ -1,5 +1,8 @@
 #file: noinspection SpringBootApplicationYaml
 
+server:
+  port: ${SERVER_PORT:8081}
+
 spring:
   application:
     name: backend
@@ -22,7 +25,7 @@ spring:
       max-lifetime: 1800000
   jpa:
     hibernate:
-      ddl-auto: validate
+      ddl-auto: none
     open-in-view: false
     properties:
       hibernate:
@@ -41,5 +44,8 @@ logging:
 jwt:
   expiry: 300
   refresh-expiry: 604800
-  private-key-res: classpath:keys/ecdsa-p256-private.pem
-  public-key-res: classpath:keys/ecdsa-p256-public.pem
+
+vault:
+  uri: ${VAULT_URI:http://127.0.0.1:8200}
+  token: ${VAULT_TOKEN:root}
+  kv-path: ${VAULT_KV_PATH:secret/backend/jwt}
