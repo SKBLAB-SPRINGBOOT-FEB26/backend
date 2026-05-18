@@ -2,6 +2,7 @@ plugins {
     id 'java'
     id 'org.springframework.boot' version '4.0.3'
     id 'io.spring.dependency-management' version '1.1.7'
+    id 'org.openapi.generator' version '7.10.0'
 }
 
 group = 'ru.rxyvea'
@@ -38,6 +39,10 @@ dependencies {
     implementation 'org.bouncycastle:bcprov-jdk18on:1.83'
     implementation 'org.bouncycastle:bcpkix-jdk18on:1.83'
     implementation 'org.springframework.boot:spring-boot-starter-data-redis'
+
+    // openapi-generator emits Jackson nullable types; swagger-annotations comes transitively from springdoc
+    implementation 'org.openapitools:jackson-databind-nullable:0.2.6'
+
     runtimeOnly 'org.postgresql:postgresql'
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'
@@ -48,4 +53,38 @@ dependencies {
 
 tasks.named('test') {
     useJUnitPlatform()
+}
+
+openApiGenerate {
+    generatorName = 'spring'
+    inputSpec = "${projectDir}/src/main/resources/openapi/api.yaml".toString()
+    outputDir = "${layout.buildDirectory.get().asFile}/generated/openapi".toString()
+    apiPackage = 'ru.rxyvea.backend.api.generated'
+    modelPackage = 'ru.rxyvea.backend.api.generated.dto'
+    generateApiTests = false
+    generateModelTests = false
+    generateApiDocumentation = false
+    generateModelDocumentation = false
+    configOptions = [
+            interfaceOnly       : 'true',
+            useSpringBoot3      : 'true',
+            useTags             : 'true',
+            skipDefaultInterface: 'true',
+            useJakartaEe        : 'true',
+            openApiNullable     : 'false',
+            dateLibrary         : 'java8',
+            hideGenerationTimestamp: 'true'
+    ]
+}
+
+sourceSets {
+    main {
+        java {
+            srcDir "${layout.buildDirectory.get().asFile}/generated/openapi/src/main/java"
+        }
+    }
+}
+
+tasks.named('compileJava') {
+    dependsOn tasks.named('openApiGenerate')
 }
