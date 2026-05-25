@@ -89,7 +89,7 @@ paths:
     get:
       tags: [users]
       operationId: getMe
-      summary: Current authenticated user (projection — no password hash).
+      summary: Get current authenticated user.
       responses:
         '200':
           description: OK

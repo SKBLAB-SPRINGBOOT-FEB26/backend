@@ -19,7 +19,7 @@ public class UserController implements UsersApi {
     @Override
     public ResponseEntity<UserResponse> getMe() {
         final var principal = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        final var view = userRepository.findViewById(principal.getId())
+        final var view = userRepository.findViewWithRolesById(principal.getId())
                 .orElseThrow(() -> new IllegalStateException("Authenticated user not found"));
         return ResponseEntity.ok(toResponse(view));
     }

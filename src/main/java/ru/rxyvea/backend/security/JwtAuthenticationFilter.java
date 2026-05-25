@@ -89,7 +89,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             }
 
             final var subject = UUID.fromString(Objects.requireNonNull(claims.getSubject()));
-            final var principal = userRepository.findById(subject)
+            final var principal = userRepository.findWithRolesById(subject)
                     .orElseThrow(() -> new AccessDeniedException("Insufficient rights"));
 
             if (Objects.equals(claims.get("typ", String.class), "refresh")) {

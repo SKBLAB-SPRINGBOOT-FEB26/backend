@@ -14,7 +14,7 @@ public class UserService {
     private final UserRepository repository;
 
     public UserDetailsService userDetailsService() {
-        return email -> repository.findByEmail(email)
+        return email -> repository.findWithRolesByEmail(email)
                 .orElseThrow(() -> new UsernameNotFoundException("User not found: " + email));
     }
 
