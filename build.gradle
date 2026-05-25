@@ -34,6 +34,8 @@ dependencies {
     implementation 'org.liquibase:liquibase-core'
     implementation 'com.fasterxml.uuid:java-uuid-generator:5.2.0'
     implementation 'io.jsonwebtoken:jjwt-api:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.13.0'
+    runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
     //noinspection VulnerableLibrariesLocal
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:3.0.2'
     implementation 'org.bouncycastle:bcprov-jdk18on:1.83'
