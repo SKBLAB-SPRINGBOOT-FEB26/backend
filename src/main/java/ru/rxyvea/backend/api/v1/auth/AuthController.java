@@ -1,20 +1,21 @@
 package ru.rxyvea.backend.api.v1.auth;
 
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseCookie;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.context.request.RequestContextHolder;
-import org.springframework.web.context.request.ServletRequestAttributes;
 import ru.rxyvea.backend.api.generated.AuthApi;
 import ru.rxyvea.backend.api.generated.dto.LoginRequest;
 import ru.rxyvea.backend.api.generated.dto.LoginResponse;
 import ru.rxyvea.backend.api.generated.dto.SignupRequest;
 import ru.rxyvea.backend.api.generated.dto.SuccessResponse;
 import ru.rxyvea.backend.model.User;
+
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -24,24 +25,31 @@ public class AuthController implements AuthApi {
     @SneakyThrows
     @Override
     public ResponseEntity<LoginResponse> signup(SignupRequest signupRequest) {
-        return ResponseEntity.status(HttpStatus.CREATED)
-                .body(authService.signup(signupRequest, currentResponse()));
+        final var result = authService.signup(signupRequest);
+        return withCookies(ResponseEntity.status(HttpStatus.CREATED), result.cookies())
+                .body(result.body());
     }
 
     @Override
     public ResponseEntity<LoginResponse> login(LoginRequest loginRequest) {
-        return ResponseEntity.ok(authService.login(loginRequest, currentResponse()));
+        final var result = authService.login(loginRequest);
+        return withCookies(ResponseEntity.ok(), result.cookies())
+                .body(result.body());
     }
 
     @Override
     public ResponseEntity<SuccessResponse> logout() {
         final var user = (User) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
-        authService.logout(user, currentResponse());
-        return ResponseEntity.ok(new SuccessResponse().ok(true));
+        final var cookies = authService.logout(user);
+        return withCookies(ResponseEntity.ok(), cookies)
+                .body(new SuccessResponse().ok(true));
     }
 
-    private static HttpServletResponse currentResponse() {
-        final var attrs = (ServletRequestAttributes) RequestContextHolder.currentRequestAttributes();
-        return attrs.getResponse();
+    private static ResponseEntity.BodyBuilder withCookies(
+            ResponseEntity.BodyBuilder builder,
+            List<ResponseCookie> cookies
+    ) {
+        cookies.forEach(cookie -> builder.header(HttpHeaders.SET_COOKIE, cookie.toString()));
+        return builder;
     }
 }

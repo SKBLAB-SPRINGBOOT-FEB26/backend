@@ -3,10 +3,8 @@ package ru.rxyvea.backend.security;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.JwtBuilder;
 import io.jsonwebtoken.Jwts;
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
-import org.springframework.lang.NonNull;
+import org.springframework.http.ResponseCookie;
 import org.springframework.stereotype.Service;
 import ru.rxyvea.backend.model.User;
 import ru.rxyvea.backend.security.props.JwtProperties;
@@ -51,22 +49,23 @@ public class JwtService {
                 .getPayload();
     }
 
-    public void applyTokensCookies(
-            @NonNull HttpServletResponse response,
-            String accessToken,
-            String refreshToken
-    ) {
-        final var accessTokenCookie = new Cookie("access_token", accessToken);
-        accessTokenCookie.setHttpOnly(true);
-        accessTokenCookie.setMaxAge(Math.toIntExact(jwtProperties.getExpiry()));
-        accessTokenCookie.setPath("/");
+    public ResponseCookie buildAccessTokenCookie(String accessToken) {
+        return buildCookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME, accessToken, jwtProperties.getExpiry());
+    }
 
-        final var refreshTokenCookie = new Cookie("refresh_token", refreshToken);
-        refreshTokenCookie.setHttpOnly(true);
-        refreshTokenCookie.setMaxAge(Math.toIntExact(jwtProperties.getRefreshExpiry()));
-        refreshTokenCookie.setPath("/");
+    public ResponseCookie buildRefreshTokenCookie(String refreshToken) {
+        return buildCookie(JwtAuthenticationFilter.REFRESH_TOKEN_COOKIE_NAME, refreshToken, jwtProperties.getRefreshExpiry());
+    }
 
-        response.addCookie(accessTokenCookie);
-        response.addCookie(refreshTokenCookie);
+    public ResponseCookie buildClearCookie(String name) {
+        return buildCookie(name, "", 0L);
+    }
+
+    private ResponseCookie buildCookie(String name, String value, long maxAgeSeconds) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .path("/")
+                .maxAge(maxAgeSeconds)
+                .build();
     }
 }

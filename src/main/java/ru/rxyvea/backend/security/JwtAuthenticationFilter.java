@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
+import org.springframework.http.HttpHeaders;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -102,7 +103,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                 final var newRefreshToken = jwtService.issueRefreshToken(principal);
 
                 refreshService.storeRefreshToken(principal.getId(), newRefreshToken);
-                jwtService.applyTokensCookies(response, newAccessToken, newRefreshToken);
+                response.addHeader(HttpHeaders.SET_COOKIE, jwtService.buildAccessTokenCookie(newAccessToken).toString());
+                response.addHeader(HttpHeaders.SET_COOKIE, jwtService.buildRefreshTokenCookie(newRefreshToken).toString());
             }
 
             final var authentication = new UsernamePasswordAuthenticationToken(

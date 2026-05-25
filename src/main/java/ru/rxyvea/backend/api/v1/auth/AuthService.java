@@ -1,8 +1,7 @@
 package ru.rxyvea.backend.api.v1.auth;
 
-import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -21,6 +20,7 @@ import ru.rxyvea.backend.security.JwtService;
 import ru.rxyvea.backend.security.RefreshService;
 import ru.rxyvea.backend.service.exceptions.UserAlreadyExistsWithFieldException;
 
+import java.util.List;
 import java.util.Set;
 
 @Service
@@ -33,8 +33,15 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
+    /**
+     * Result of an auth flow: the JSON body and the {@code Set-Cookie} headers the
+     * controller must attach to its {@link org.springframework.http.ResponseEntity}.
+     */
+    public record AuthResult(LoginResponse body, List<ResponseCookie> cookies) {
+    }
+
     @Transactional
-    public LoginResponse signup(SignupRequest request, HttpServletResponse response)
+    public AuthResult signup(SignupRequest request)
             throws UserAlreadyExistsWithFieldException {
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
             throw new UserAlreadyExistsWithFieldException("email");
@@ -55,41 +62,39 @@ public class AuthService {
                 .build();
 
         final var saved = userRepository.save(user);
-        return issueTokens(saved, response);
+        return issueTokens(saved);
     }
 
-    public LoginResponse login(LoginRequest request, HttpServletResponse response) {
+    public AuthResult login(LoginRequest request) {
         final var authentication = authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword())
         );
-        return issueTokens((User) authentication.getPrincipal(), response);
+        return issueTokens((User) authentication.getPrincipal());
     }
 
-    private LoginResponse issueTokens(User user, HttpServletResponse response) {
+    private AuthResult issueTokens(User user) {
         final var accessToken = jwtService.issueAccessToken(user);
         final var refreshToken = jwtService.issueRefreshToken(user);
 
         refreshService.storeRefreshToken(user.getId(), refreshToken);
-        jwtService.applyTokensCookies(response, accessToken, refreshToken);
 
-        return new LoginResponse(
+        final var body = new LoginResponse(
                 user.getId(),
                 user.getEmail(),
                 user.getRoles().stream().map(Role::getName).toList()
         );
+
+        return new AuthResult(body, List.of(
+                jwtService.buildAccessTokenCookie(accessToken),
+                jwtService.buildRefreshTokenCookie(refreshToken)
+        ));
     }
 
-    public void logout(User user, HttpServletResponse response) {
+    public List<ResponseCookie> logout(User user) {
         refreshService.revokeRefreshToken(user.getId());
-        clearTokenCookie(response, JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME);
-        clearTokenCookie(response, JwtAuthenticationFilter.REFRESH_TOKEN_COOKIE_NAME);
-    }
-
-    private void clearTokenCookie(HttpServletResponse response, String name) {
-        final var cookie = new Cookie(name, "");
-        cookie.setHttpOnly(true);
-        cookie.setMaxAge(0);
-        cookie.setPath("/");
-        response.addCookie(cookie);
+        return List.of(
+                jwtService.buildClearCookie(JwtAuthenticationFilter.ACCESS_TOKEN_COOKIE_NAME),
+                jwtService.buildClearCookie(JwtAuthenticationFilter.REFRESH_TOKEN_COOKIE_NAME)
+        );
     }
 }
